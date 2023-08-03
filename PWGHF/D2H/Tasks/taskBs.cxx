@@ -29,7 +29,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_cand_3prong;
-using namespace o2::aod::hf_cand_bs;              // from CandidateReconstructionTables.h
+using namespace o2::aod::hf_cand_bs;               // from CandidateReconstructionTables.h
 using namespace o2::analysis::hf_cuts_bs_to_ds_pi; // from SelectorCuts.h
 using namespace o2::framework::expressions;
 
@@ -303,7 +303,6 @@ struct HfTaskBs {
         registry.fill(HIST("hPtGenWithProngsInAcceptance"), ptParticle);
         registry.fill(HIST("hEtaGenWithProngsInAcceptance"), particle.eta(), ptParticle);
         registry.fill(HIST("hYGenWithProngsInAcceptance"), yParticle, ptParticle);
-
       }
     } // gen
   }   // process

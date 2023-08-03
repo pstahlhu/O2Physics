@@ -125,7 +125,7 @@ struct HfCandidateSelectorBsToDsPi {
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCandBs);
         }
-        //LOGF(info, "Bs candidate selection failed at hfflag check");
+        // LOGF(info, "Bs candidate selection failed at hfflag check");
         continue;
       }
       SETBIT(statusBsToDsPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBsToDsPi = 1

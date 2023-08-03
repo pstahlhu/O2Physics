@@ -227,9 +227,9 @@ struct HfCandidateCreatorBs {
         array<float, 3> pVecKK = RecoDecay::pVec(pVec0, pVec1);
         array<float, 3> pVecDs = RecoDecay::pVec(pVec0, pVec1, pVec2);
         auto trackParCovKK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecKK, df3.calcPCACovMatrixFlat(),
-                                                trackParCov0, trackParCov1, {0, 0}, {0, 0});
+                                                 trackParCov0, trackParCov1, {0, 0}, {0, 0});
         auto trackParCovDs = o2::dataformats::V0(df3.getPCACandidatePos(), pVecDs, df3.calcPCACovMatrixFlat(),
-                                               trackParCovKK, trackParCov2, {0, 0}, {0, 0});
+                                                 trackParCovKK, trackParCov2, {0, 0}, {0, 0});
 
         int indexTrack0 = track0.globalIndex();
         int indexTrack1 = track1.globalIndex();
@@ -275,7 +275,7 @@ struct HfCandidateCreatorBs {
           // propagate Ds and Pi to the Bs vertex
           df2.propagateTracksToVertex();
           // track.getPxPyPzGlo(pVec) modifies pVec of track
-          df2.getTrack(0).getPxPyPzGlo(pVecDs);    // momentum of Ds at the Bs vertex
+          df2.getTrack(0).getPxPyPzGlo(pVecDs);   // momentum of Ds at the Bs vertex
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Bs vertex
 
           // calculate invariant mass and apply selection
@@ -283,7 +283,6 @@ struct HfCandidateCreatorBs {
           if (std::abs(massDsPi - massBs) > invMassWindowBs) {
             continue;
           }
-
 
           // compute impact parameters of Ds and Pi
           o2::dataformats::DCA dcaDs;
@@ -365,8 +364,8 @@ struct HfCandidateCreatorBsExpressions {
                                     candDs.prong2_as<aod::BigTracksMC>(),
                                     candidate.prong1_as<aod::BigTracksMC>()};
       auto arrayDaughtersDs = array{candDs.prong0_as<aod::BigTracksMC>(),
-                                   candDs.prong1_as<aod::BigTracksMC>(),
-                                   candDs.prong2_as<aod::BigTracksMC>()};
+                                    candDs.prong1_as<aod::BigTracksMC>(),
+                                    candDs.prong2_as<aod::BigTracksMC>()};
 
       // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
       indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersBs, pdg::Code::kBS, array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
