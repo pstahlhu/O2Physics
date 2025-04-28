@@ -778,7 +778,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                                             TracksWCovExtraPidPrPi const& tracks,
                                             aod::BCsWithTimestamps const& bcs)
   {
-  runXicplusCreatorWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, rowsTrackIndexXicPlus, kfCascadesLinked, kfCascadesFull, tracks, bcs);
+    runXicplusCreatorWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, rowsTrackIndexXicPlus, kfCascadesLinked, kfCascadesFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCentFT0CXicplusWithKFParticle, "Run candidate creator with KFParticle with centrality selection on FT0C.", false);
 
@@ -789,7 +789,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                                             TracksWCovExtraPidPrPi const& tracks,
                                             aod::BCsWithTimestamps const& bcs)
   {
-  runXicplusCreatorWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, rowsTrackIndexXicPlus, kfCascadesLinked, kfCascadesFull, tracks, bcs);
+    runXicplusCreatorWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, rowsTrackIndexXicPlus, kfCascadesLinked, kfCascadesFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCentFT0MXicplusWithKFParticle, "Run candidate creator with KFParticle with centrality selection on FT0M.", false);
 
@@ -872,7 +872,8 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
   HfEventSelectionMc hfEvSelMc;
 
-  void init(InitContext& initContext) {
+  void init(InitContext& initContext)
+  {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-xic-to-xi-pi-pi") == 0) {
