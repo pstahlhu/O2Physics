@@ -35,6 +35,7 @@
 #include <map>
 #include <stdexcept>
 #include <string> // std::string
+#include <tuple>
 #include <utility>
 #include <vector> // std::vector
 
