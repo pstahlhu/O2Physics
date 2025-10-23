@@ -37,7 +37,6 @@
 #include <TColor.h>
 #include <TDatabasePDG.h>
 #include <TLine.h>
-#include <TNamed.h>
 #include <TPaveText.h>
 #include <TString.h>
 #include <TStyle.h>
@@ -57,8 +56,7 @@ using namespace RooFit;
 
 ClassImp(HFInvMassFitter);
 
-HFInvMassFitter::HFInvMassFitter() : TNamed(),
-                                     mHistoInvMass(nullptr),
+HFInvMassFitter::HFInvMassFitter() : mHistoInvMass(nullptr),
                                      mFitOption("L,E"),
                                      mMinMass(0),
                                      mMaxMass(5),
@@ -131,8 +129,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
   // default constructor
 }
 
-HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : TNamed(),
-                                                                                                                                    mHistoInvMass(nullptr),
+HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : mHistoInvMass(nullptr),
                                                                                                                                     mFitOption("L,E"),
                                                                                                                                     mMinMass(minValue),
                                                                                                                                     mMaxMass(maxValue),
@@ -267,7 +264,7 @@ void HFInvMassFitter::doFit()
   if (mTypeOfBkgPdf == NoBkg) {                                                                                // MC
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", 0.3 * mIntegralHisto, 0., 1.2 * mIntegralHisto); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));       // create total pdf
-    if (!strcmp(mFitOption.Data(), "Chi2")) {
+    if (strcmp(mFitOption.Data(), "Chi2") == 0) {
       mTotalPdf->chi2FitTo(dataHistogram, Range("signal"));
     } else {
       mTotalPdf->fitTo(dataHistogram, Range("signal"));
@@ -279,13 +276,13 @@ void HFInvMassFitter::doFit()
   } else {                                           // data
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
       } else {
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
       }
     } else { // single peak fit
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR"), Save());
       } else {
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
@@ -294,7 +291,7 @@ void HFInvMassFitter::doFit()
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
     RooPlot* frameTemporary = mass->frame(Title(Form("%s_temp", mHistoInvMass->GetTitle())));
     dataHistogram.plotOn(frameTemporary, Name("data_for_bkgchi2"));
-    mBkgPdf->plotOn(frameTemporary, Range("SBL", "SBR"), Name("Bkg_sidebands"));
+    mBkgPdf->plotOn(frameTemporary, Range("SBL", true), Name("Bkg_sidebands"));
     mChiSquareOverNdfBkg = frameTemporary->chiSquare("Bkg_sidebands", "data_for_bkgchi2"); // calculate reduced chi2 / NDF of background sidebands (pre-fit)
     delete frameTemporary;
     RooAbsPdf* mBkgPdfPrefit{nullptr};
@@ -318,7 +315,7 @@ void HFInvMassFitter::doFit()
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
     // create reflection template and fit to reflection
-    if (mHistoTemplateRefl) {
+    if (mHistoTemplateRefl != nullptr) {
       RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
       RooDataHist reflHistogram("reflHistogram", "refl for fit", *mass, Import(*mHistoTemplateRefl));
       mReflFrame = mass->frame();
@@ -326,7 +323,7 @@ void HFInvMassFitter::doFit()
       reflHistogram.plotOn(mReflOnlyFrame);
       mRooNRefl = new RooRealVar("mNRefl", "number of reflection", 0.5 * mHistoTemplateRefl->Integral(), 0, mHistoTemplateRefl->Integral());
       RooAddPdf reflFuncTemp("reflFuncTemp", "template reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         reflFuncTemp.chi2FitTo(reflHistogram);
       } else {
         reflFuncTemp.fitTo(reflHistogram);
@@ -337,14 +334,14 @@ void HFInvMassFitter::doFit()
       mRooNRefl->setConstant(kTRUE);
       setReflFuncFixed(); // fix reflection pdf parameter
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal + reflection fit function", RooArgList(*bkgPdf, *sgnPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNSgn, *mRooNRefl));
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         mTotalPdf->chi2FitTo(dataHistogram);
       } else {
         mTotalPdf->fitTo(dataHistogram);
       }
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"));
       mReflPdf = new RooAddPdf("mReflPdf", "reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
-      RooAddPdf reflBkgPdf("reflBkgPdf", "reflBkgPdf", RooArgList(*bkgPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNRefl));
+      RooAddPdf const reflBkgPdf("reflBkgPdf", "reflBkgPdf", RooArgList(*bkgPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNRefl));
       reflBkgPdf.plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineStyle(7), LineColor(kRed + 1), Name("ReflBkg_c"));
       plotBkg(mTotalPdf);                                                   // plot bkg pdf in total pdf
       plotRefl(mTotalPdf);                                                  // plot reflection in total pdf
@@ -357,7 +354,7 @@ void HFInvMassFitter::doFit()
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     } else {
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         mTotalPdf->chi2FitTo(dataHistogram);
       } else {
         mTotalPdf->fitTo(dataHistogram);
@@ -399,30 +396,30 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*bkgFuncExpo);
   delete bkgFuncExpo;
   // bkg poly1
-  RooRealVar polyParam0("polyParam0", "Parameter of Poly function", 0.5, -5., 5.);
-  RooRealVar polyParam1("polyParam1", "Parameter of Poly function", 0.2, -5., 5.);
+  RooRealVar const polyParam0("polyParam0", "Parameter of Poly function", 0.5, -5., 5.);
+  RooRealVar const polyParam1("polyParam1", "Parameter of Poly function", 0.2, -5., 5.);
   RooAbsPdf* bkgFuncPoly1 = new RooPolynomial("bkgFuncPoly1", "background fit function", mass, RooArgSet(polyParam0, polyParam1));
   workspace.import(*bkgFuncPoly1);
   delete bkgFuncPoly1;
   // bkg poly2
-  RooRealVar polyParam2("polyParam2", "Parameter of Poly function", 0.2, -5., 5.);
+  RooRealVar const polyParam2("polyParam2", "Parameter of Poly function", 0.2, -5., 5.);
   RooAbsPdf* bkgFuncPoly2 = new RooPolynomial("bkgFuncPoly2", "background fit function", mass, RooArgSet(polyParam0, polyParam1, polyParam2));
   workspace.import(*bkgFuncPoly2);
   delete bkgFuncPoly2;
   // bkg poly3
-  RooRealVar polyParam3("polyParam3", "Parameter of Poly function", 0.2, -1., 1.);
+  RooRealVar const polyParam3("polyParam3", "Parameter of Poly function", 0.2, -1., 1.);
   RooAbsPdf* bkgFuncPoly3 = new RooPolynomial("bkgFuncPoly3", "background pdf", mass, RooArgSet(polyParam0, polyParam1, polyParam2, polyParam3));
   workspace.import(*bkgFuncPoly3);
   delete bkgFuncPoly3;
   // bkg power law
-  RooRealVar powParam1("powParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
-  RooRealVar powParam2("powParam2", "Parameter of Pow function", 1., -10, 10);
+  RooRealVar const powParam1("powParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
+  RooRealVar const powParam2("powParam2", "Parameter of Pow function", 1., -10, 10);
   RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-powParam1)^powParam2", RooArgSet(mass, powParam1, powParam2));
   workspace.import(*bkgFuncPow);
   delete bkgFuncPow;
   // pow * exp
-  RooRealVar powExpoParam1("powExpoParam1", "Parameter of PowExpo function", 1 / 2);
-  RooRealVar powExpoParam2("powExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
+  RooRealVar const powExpoParam1("powExpoParam1", "Parameter of PowExpo function", 1. / 2.);
+  RooRealVar const powExpoParam2("powExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
   RooRealVar massPi("massPi", "mass of pion", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooFormulaVar powExpoParam3("powExpoParam3", "powExpoParam1 + 1", RooArgList(powExpoParam1));
   RooFormulaVar powExpoParam4("powExpoParam4", "1./powExpoParam2", RooArgList(powExpoParam2));
@@ -467,8 +464,8 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
     sigmaDoubleGaus.setVal(mSigmaSgnDoubleGaus);
     sigmaDoubleGaus.setConstant(kTRUE);
   }
-  RooGaussian gaus1("gaus1", "gaus1", mass, mean, sigma);
-  RooGaussian gaus2("gaus2", "gaus2", mass, mean, sigmaDoubleGaus);
+  RooGaussian const gaus1("gaus1", "gaus1", mass, mean, sigma);
+  RooGaussian const gaus2("gaus2", "gaus2", mass, mean, sigmaDoubleGaus);
   RooRealVar fracDoubleGaus("fracDoubleGaus", "frac of two gauss", mFracDoubleGaus, 0, 1.);
   if (mFixedFracDoubleGaus) {
     fracDoubleGaus.setVal(mFracDoubleGaus);
@@ -492,8 +489,8 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
     sigma.setMin(mSigmaSgn * (1 - mParamSgn));
   }
   RooRealVar sigmaDoubleGausRatio("sigmaDoubleGausRatio", "sigmaDoubleGausRatio", sigma.getVal() * ratio.getVal());
-  RooGaussian gausRatio1("gausRatio1", "gausratio1", mass, mean, sigma);
-  RooGaussian gausRatio2("gausRatio2", "gausratio2", mass, mean, sigmaDoubleGausRatio);
+  RooGaussian const gausRatio1("gausRatio1", "gausratio1", mass, mean, sigma);
+  RooGaussian const gausRatio2("gausRatio2", "gausratio2", mass, mean, sigmaDoubleGausRatio);
   RooRealVar fracDoubleGausRatio("fracDoubleGausRatio", "fraction of two gauss ratio", 0.5, 0, 1.);
   if (mFixedFracDoubleGaus) {
     fracDoubleGausRatio.setVal(mFracDoubleGaus);
@@ -521,9 +518,9 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
     sigmaSec.setMax(mSecSigma * (1 + mParamSgn));
     sigmaSec.setMin(mSecSigma * (1 - mParamSgn));
   }
-  RooGaussian gausSec1("gausSec1", "gausSec1", mass, mean, sigmaSec);
-  RooGaussian gausSec2("gausSec2", "gausSec2", mass, meanSec, sigmaSec);
-  RooRealVar fracSec("fracSec", "frac of two peak", 0.5, 0, 1.);
+  RooGaussian const gausSec1("gausSec1", "gausSec1", mass, mean, sigmaSec);
+  RooGaussian const gausSec2("gausSec2", "gausSec2", mass, meanSec, sigmaSec);
+  RooRealVar const fracSec("fracSec", "frac of two peak", 0.5, 0, 1.);
   RooAbsPdf* sgnFuncDoublePeak = new RooAddPdf("sgnFuncDoublePeak", "signal pdf", RooArgList(gausSec1, gausSec2), fracSec);
   workspace.import(*sgnFuncDoublePeak);
   delete sgnFuncDoublePeak;
@@ -544,24 +541,24 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
     meanReflDoubleGaus.setMin(mMassReflLowLimit);
   }
   RooRealVar sigmaReflDoubleGaus("sigmaReflDoubleGaus", "sigmaReflDoubleGaus", 0.012, 0.0, 0.25);
-  RooGaussian gausRefl1("gausRefl1", "gausRefl1", mass, meanRefl, sigmaRefl);
-  RooGaussian gausRefl2("gausRefl2", "gausRefl2", mass, meanReflDoubleGaus, sigmaReflDoubleGaus);
-  RooRealVar fracRefl("fracRefl", "frac of two gauss", 0.5, 0, 1.);
+  RooGaussian const gausRefl1("gausRefl1", "gausRefl1", mass, meanRefl, sigmaRefl);
+  RooGaussian const gausRefl2("gausRefl2", "gausRefl2", mass, meanReflDoubleGaus, sigmaReflDoubleGaus);
+  RooRealVar const fracRefl("fracRefl", "frac of two gauss", 0.5, 0, 1.);
   RooAbsPdf* reflFuncDoubleGaus = new RooAddPdf("reflFuncDoubleGaus", "reflection pdf", RooArgList(gausRefl1, gausRefl2), fracRefl);
   workspace.import(*reflFuncDoubleGaus);
   delete reflFuncDoubleGaus;
   // reflection poly3
-  RooRealVar polyReflParam0("polyReflParam0", "polyReflParam0", 0.5, -1., 1.);
-  RooRealVar polyReflParam1("polyReflParam1", "polyReflParam1", 0.2, -1., 1.);
-  RooRealVar polyReflParam2("polyReflParam2", "polyReflParam2", 0.2, -1., 1.);
-  RooRealVar polyReflParam3("polyReflParam3", "polyReflParam3", 0.2, -1., 1.);
+  RooRealVar const polyReflParam0("polyReflParam0", "polyReflParam0", 0.5, -1., 1.);
+  RooRealVar const polyReflParam1("polyReflParam1", "polyReflParam1", 0.2, -1., 1.);
+  RooRealVar const polyReflParam2("polyReflParam2", "polyReflParam2", 0.2, -1., 1.);
+  RooRealVar const polyReflParam3("polyReflParam3", "polyReflParam3", 0.2, -1., 1.);
   RooAbsPdf* reflFuncPoly3 = new RooPolynomial("reflFuncPoly3", "reflection PDF", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3));
   workspace.import(*reflFuncPoly3);
   delete reflFuncPoly3;
   // reflection poly6
-  RooRealVar polyReflParam4("polyReflParam4", "polyReflParam4", 0.2, -1., 1.);
-  RooRealVar polyReflParam5("polyReflParam5", "polyReflParam5", 0.2, -1., 1.);
-  RooRealVar polyReflParam6("polyReflParam6", "polyReflParam6", 0.2, -1., 1.);
+  RooRealVar const polyReflParam4("polyReflParam4", "polyReflParam4", 0.2, -1., 1.);
+  RooRealVar const polyReflParam5("polyReflParam5", "polyReflParam5", 0.2, -1., 1.);
+  RooRealVar const polyReflParam6("polyReflParam6", "polyReflParam6", 0.2, -1., 1.);
   RooAbsPdf* reflFuncPoly6 = new RooPolynomial("reflFuncPoly6", "reflection pdf", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3, polyReflParam4, polyReflParam5, polyReflParam6));
   workspace.import(*reflFuncPoly6);
   delete reflFuncPoly6;
@@ -575,7 +572,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   gStyle->SetFrameFillColor(0);
   pad->cd();
   // Fit metrics
-  TPaveText* textFitMetrics = new TPaveText(0.65, 0.7, 0.9, 0.88, "NDC");
+  auto* textFitMetrics = new TPaveText(0.65, 0.7, 0.9, 0.88, "NDC");
   textFitMetrics->SetBorderSize(0);
   textFitMetrics->SetFillStyle(0);
   textFitMetrics->SetTextSize(0.04);
@@ -594,7 +591,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   }
   mInvMassFrame->addObject(textFitMetrics);
   // Analysis information
-  TPaveText* textAnalysisInfo = new TPaveText(0.18, 0.78, 0.35, 0.88, "NDC");
+  auto* textAnalysisInfo = new TPaveText(0.18, 0.78, 0.35, 0.88, "NDC");
   textAnalysisInfo->SetBorderSize(0);
   textAnalysisInfo->SetFillStyle(0);
   textAnalysisInfo->SetTextSize(0.05);
@@ -650,7 +647,7 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
 {
   pad->cd();
   mResidualFrame->GetYaxis()->SetTitle("");
-  TPaveText* textInfo = new TPaveText(0.12, 0.65, 0.47, .89, "NDC");
+  auto* textInfo = new TPaveText(0.12, 0.65, 0.47, .89, "NDC");
   textInfo->SetBorderSize(0);
   textInfo->SetFillStyle(0);
   textInfo->SetTextColor(kBlue);
@@ -689,16 +686,17 @@ void HFInvMassFitter::drawRatio(TVirtualPad* pad)
 // draw peak region with vertical lines
 void HFInvMassFitter::highlightPeakRegion(const RooPlot* plot, Color_t color, Width_t width, Style_t style) const
 {
-  if (!mHighlightPeakRegion)
+  if (!mHighlightPeakRegion) {
     return;
-  double yMin = plot->GetMinimum();
-  double yMax = plot->GetMaximum();
+  }
+  double const yMin = plot->GetMinimum();
+  double const yMax = plot->GetMaximum();
   const Double_t mean = mRooMeanSgn->getVal();
   const Double_t sigma = mRooSecSigmaSgn->getVal();
   const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
   const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
-  TLine* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
-  TLine* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
+  auto* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
+  auto* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
   for (const auto& line : std::array<TLine*, 2>{leftLine, rightLine}) {
     line->SetLineColor(color);
     line->SetLineWidth(width);
@@ -764,9 +762,9 @@ void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& er
   calculateSignal(signal, errSignal);
   Double_t bkg, errBkg;
   calculateBackground(bkg, errBkg);
-  Double_t sgnErrSquare = errSignal * errSignal;
-  Double_t bkgErrSquare = errBkg * errBkg;
-  Double_t totalSgnBkg = signal + bkg;
+  Double_t const sgnErrSquare = errSignal * errSignal;
+  Double_t const bkgErrSquare = errBkg * errBkg;
+  Double_t const totalSgnBkg = signal + bkg;
   significance = signal / std::sqrt(signal + bkg);
   errSignificance = significance * std::sqrt((sgnErrSquare + bkgErrSquare) / (mNSigmaForSidebands * totalSgnBkg * totalSgnBkg) + (bkg / totalSgnBkg) * (sgnErrSquare / signal / signal));
 }
@@ -774,10 +772,10 @@ void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& er
 // estimate Signal
 void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 {
-  Double_t minForSgn = mMass - 4 * mSigmaSgn;
-  Double_t maxForSgn = mMass + 4 * mSigmaSgn;
-  Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
-  Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
+  Double_t const minForSgn = mMass - 4 * mSigmaSgn;
+  Double_t const maxForSgn = mMass + 4 * mSigmaSgn;
+  Int_t const binForMinSgn = mHistoInvMass->FindBin(minForSgn);
+  Int_t const binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
 
   Double_t sum = 0;
   for (Int_t i = binForMinSgn; i <= binForMaxSgn; i++) {
